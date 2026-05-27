@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriScan PH - Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: sans-serif; }
+    </style>
+</head>
+<body class="bg-green-50 min-h-screen">
+
+    <!-- NAVBAR -->
+    <nav class="bg-green-700 text-white p-4 shadow-lg">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <span class="text-2xl font-bold">NutriScan<span class="text-yellow-300">PH</span></span>
+            <span class="text-sm">Filipino Nutrition Calculator</span>
+        </div>
+    </nav>
+
+    <!-- CALCULATOR SECTION -->
+    <div class="max-w-lg mx-auto mt-10 p-6">
+        <div class="bg-white rounded-xl shadow-xl p-6">
+            <h1 class="text-2xl font-bold text-center mb-6 text-green-700">I-Calculate Mo!</h1>
+            
+            <!-- FOOD NAME INPUT -->
+            <label class="block text-sm font-bold mb-2">Food Name</label>
+            <input type="text" id="foodName" placeholder="Halimbawa: Adobo, Sinigang, Puto..." 
+                class="w-full p-3 border-2 border-green-200 rounded-lg mb-4 focus:border-green-500 focus:outline-none"
+                oninput="findFood()">
+            
+            <!-- SERVING INPUT -->
+            <label class="block text-sm font-bold mb-2">Serving Size</label>
+            <div class="flex gap-2 mb-4">
+                <input type="number" id="servingQty" value="1" step="0.5" min="0.5"
+                    class="w-20 p-3 border-2 border-green-200 rounded-lg text-center focus:border-green-500 focus:outline-none">
+                <select id="servingUnit" class="flex-1 p-3 border-2 border-green-200 rounded-lg focus:border-green-500 focus:outline-none">
+                    <option value="1">plate</option>
+                    <option value="1">cup</option>
+                    <option value="1">piece/slice</option>
+                    <option value="1">bowl</option>
+                    <option value="0.5">half</option>
+                    <option value="2">2 plates</option>
+                    <option value="3">3 plates</option>
+                </select>
+            </div>
+
+            <!-- CALCULATE BUTTON -->
+            <button onclick="calculate()" class="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 transition">
+                I-Calculate
+            </button>
+
+            <!-- RESULT DISPLAY -->
+            <div id="result" class="mt-6 p-4 bg-green-50 rounded-lg hidden">
+                <h2 class="text-xl font-bold text-green-700 mb-3" id="resultFood">Food Name</h2>
+                <p class="text-gray-600 mb-4" id="resultServing">Serving: 1 plate</p>
+                
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-white p-3 rounded-lg shadow">
+                        <p class="text-2xl font-bold text-orange-500" id="resultCal">0</p>
+                        <p class="text-xs text-gray-500">Calories</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg shadow">
+                        <p class="text-2xl font-bold text-blue-500" id="resultPro">0g</p>
+                        <p class="text-xs text-gray-500">Protein</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-lg shadow">
+                        <p class="text-2xl font-bold text-yellow-500" id="resultCarb">0g</p>
+                        <p class="text-xs text-gray-500">Carbs</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUGGESTIONS -->
+            <div class="mt-6">
+                <p class="text-sm text-gray-500 mb-2">Mga popular na pagkain:</p>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="selectFood('Adobo')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-green-200">Adobo</button>
+                    <button onclick="selectFood('Sinigang')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-green-200">Sinigang</button>
+                    <button onclick="selectFood('Kare-Kare')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-green-200">Kare-Kare</button>
+                    <button onclick="selectFood('Pandesal')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-green-200">Pandesal</button>
+                    <button onclick="selectFood('Halo-Halo')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-green-200">Halo-Halo</button>
+                    <button onclick="selectFood('Lechon')" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-green-200">Lechon</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT -->
+    <script>
+        // FILIPINO FOOD DATABASE (Base values per 1 plate/cup/piece)
+        const foodDB = {
+            "Adobo": { unit: "1 plate", cal: 310, pro: 28, carb: 8 },
+            "Adobo Chicken": { unit: "1 plate", cal: 310, pro: 28, carb: 8 },
+            "Adobo Pork": { unit: "1 plate", cal: 410, pro: 22, carb: 6 },
+            "Sinigang": { unit: "1 plate", cal: 180, pro: 15, carb: 12 },
+            "Sinigang Baboy": { unit: "1 plate", cal: 180, pro: 15, carb: 12 },
+            "Sinigang Isda": { unit: "1 plate", cal: 150, pro: 18, carb: 8 },
+            "Kare-Kare": { unit: "1 plate", cal: 350, pro: 20, carb: 15 },
+            "Lechon Kawali": { unit: "3 slices", cal: 450, pro: 18, carb: 0 },
+            "Lechon": { unit: "1 slice", cal: 250, pro: 25, carb: 2 },
+            "Pinakbet": { unit: "1 plate", cal: 120, pro: 4, carb: 14 },
+            "Pancit Canton": { unit: "1 cup", cal: 300, pro: 9, carb: 45 },
+            "Pancit Malabon": { unit: "1 cup", cal: 320, pro: 10, carb: 48 },
+            "Tinolang Isda": { unit: "1 bowl", cal: 120, pro: 20, carb: 5 },
+            "Laing": { unit: "1 plate", cal: 200, pro: 6, carb: 20 },
+            "Ginataan": { unit: "1 plate", cal: 320, pro: 22, carb: 10 },
+            "Bicol Express": { unit: "1 plate", cal: 380, pro: 16, carb: 8 },
+            "Menudo": { unit: "1 plate", cal: 290, pro: 18, carb: 20 },
+            "Kaldereta": { unit: "1 plate", cal: 310, pro: 20, carb: 12 },
+            "Afritada": { unit: "1 plate", cal: 270, pro: 16, carb: 18 },
+            
+            // Merienda
+            "Pandesal": { unit: "1 piece", cal: 90, pro: 3, carb: 15 },
+            "Puto": { unit: "2 pieces", cal: 140, pro: 4, carb: 20 },
+            "Bibingka": { unit: "1 slice", cal: 220, pro: 5, carb: 30 },
+            "Halo-Halo": { unit: "1 cup", cal: 300, pro: 4, carb: 60 },
+            "Turon": { unit: "1 piece", cal: 250, pro: 2, carb: 35 },
+            "Taho": { unit: "1 cup", cal: 180, pro: 9, carb: 22 },
+            "Biko": { unit: "1 piece", cal: 200, pro: 3, carb: 40 },
+            "Kutsinta": { unit: "2 pieces", cal: 160, pro: 2, carb: 28 },
+            "Maja Blanca": { unit: "1 piece", cal: 190, pro: 4, carb: 24 },
+            "Empanada": { unit: "1 piece", cal: 280, pro: 6, carb: 30 },
+            
+            // Beverages
+            "Sago": { unit: "1 cup", cal: 100, pro: 0, carb: 25 },
+            "Buko Juice": { unit: "1 cup", cal: 80, pro: 2, carb: 18 },
+            "Milk Tea": { unit: "1 cup", cal: 350, pro: 6, carb: 55 }
+        };
+
+        let selectedFoodData = null;
+
+        // FIND FOOD FROM INPUT
+        function findFood() {
+            let input = document.getElementById('foodName').value.toLowerCase();
+            let found = null;
+            
+            // Search in database
+            for (let key in foodDB) {
+                if (key.toLowerCase().includes(input)) {
+                    found = foodDB[key];
+                    selectedFoodData = { name: key, ...found };
+                    break;
+                }
+            }
+        }
+
+        // SELECT FOOD FROM BUTTONS
+        function selectFood(name) {
+            document.getElementById('foodName').value = name;
+            findFood();
+        }
+
+        // CALCULATE NUTRITION
+        function calculate() {
+            let foodName = document.getElementById('foodName').value;
+            let qty = parseFloat(document.getElementById('servingQty').value);
+            let unit = document.getElementById('servingUnit').value;
+            
+            // Find food data
+            let foodData = null;
+            let exactName = "";
+            
+            for (let key in foodDB) {
+                if (key.toLowerCase() === foodName.toLowerCase() || key.toLowerCase().includes(foodName.toLowerCase())) {
+                    foodData = foodDB[key];
+                    exactName = key;
+                    break;
+                }
+            }
+            
+            if (!foodData) {
+                alert("Hindi nahanap ang pagkain! Subukan ang ibang pangalan ng pagkain.");
+                return;
+            }
+            
+            // CALCULATE
+            let multiplier = qty * parseFloat(unit);
+            let cal = Math.round(foodData.cal * multiplier);
+            let pro = Math.round(foodData.pro * multiplier);
+            let carb = Math.round(foodData.carb * multiplier);
+            
+            // DISPLAY RESULT
+            document.getElementById('result').classList.remove('hidden');
+            document.getElementById('resultFood').innerText = exactName;
+            document.getElementById('resultServing').innerText = qty + " " + (qty > 1 ? "plates" : foodData.unit);
+            document.getElementById('resultCal').innerText = cal;
+            document.getElementById('resultPro').innerText = pro + "g";
+            document.getElementById('resultCarb').innerText = carb + "g";
+        }
+    </script>
+</body>
+</html>
